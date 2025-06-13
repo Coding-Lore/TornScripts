@@ -6,8 +6,8 @@
 // @author       Lore
 // @match        https://www.torn.com/loader.php?sid=attack&user2ID=*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
-// @downloadURL
-// @updateURL
+// @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/ZoomyAttacks.user.js
+// @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/ZoomyAttacks.user.js
 // @license      MIT
 // @grant        GM_addStyle
 // ==/UserScript==
