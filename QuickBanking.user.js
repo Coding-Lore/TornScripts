@@ -6,7 +6,9 @@
 // @author       Lore
 // @match        https://www.torn.com/trade.php*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
-// @grant        GM_addStyle
+// @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/QuickBanking.user.js
+// @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/QuickBanking.user.js
+// @license      MIT
 // ==/UserScript==
 
 
