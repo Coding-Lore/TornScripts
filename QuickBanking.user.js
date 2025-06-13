@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Quick Banking!
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/Coding-Lore/TornScripts
 // @version      1.1
 // @description  Inserts a Bank button in trades that deposits all money on hand, and reappears when a deposit is made
 // @author       Lore
