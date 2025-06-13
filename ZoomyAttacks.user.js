@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Zoomy Attacks
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/Coding-Lore/TornScripts
 // @version      1.0
 // @description  Make Attacks go Zoom
 // @author       Lore
