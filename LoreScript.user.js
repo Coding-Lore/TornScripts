@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lore's Ultimate Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      4.9.2
+// @version      4.9.3
 // @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Clickable Name, Quick RR Buttons
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
@@ -60,6 +60,20 @@
         /** Attack Enhancements: Zoomy + Clickable Name */
         attackEnhancements: function(){
             if(!config.attackEnhancements || !location.href.includes('loader.php?sid=attack&user2ID=')) return;
+            const dialog = document.querySelector('.dialog___Q0GdI');
+            if (dialog) {
+                dialog.style.background = 'transparent';      // remove black
+                dialog.style.boxShadow = 'none';             // remove shadows
+                dialog.style.border = 'none';                // remove borders
+            }
+
+            const colored = document.querySelector('.colored___sN72G');
+            if (colored) {
+                colored.style.background = 'transparent';    // remove green
+                colored.style.boxShadow = 'none';            // remove shadows
+                colored.style.border = 'none';               // remove borders
+            }
+
 
             const topStyle="0";
             let attackType=Number(localStorage.getItem("torn-attack-type"))||2;
@@ -72,7 +86,7 @@
                     z-index:1000; position:absolute; top:${topStyle};
                     display:flex; left:-300px; width:420px; justify-content:center;
                 }
-                .btn___RxE8_ { margin:0; padding:225px 25px !important; }
+                .btn___RxE8_ { margin:0; padding:220px 25px !important; }
                 ${attackType===1?`
                     .dialogButtons___nX4Bz button:nth-child(1){order:2;}
                     .dialogButtons___nX4Bz button:nth-child(2){order:1;}
