@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Lore's Cool Script
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/Coding-Lore/TornScripts
 // @version      4.1
 // @description  Zoomy Attacks, Quick Banking, Clickable name in loader, Quick RR buttons
 // @author       Lore
@@ -9,6 +9,7 @@
 // @match        https://www.torn.com/trade.php*
 // @match        https://www.torn.com/page.php?sid=russianRoulette*
 // @grant        GM_addStyle
+// @license      MIT
 // ==/UserScript==
 
 (function() {
