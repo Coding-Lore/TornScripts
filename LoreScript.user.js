@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Lore's Ultimate Script
+// @name         Lore's Cool Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
 // @version      4.9.3
 // @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Clickable Name, Quick RR Buttons
