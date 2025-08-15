@@ -5,6 +5,8 @@
 // @description  Zoomy Attacks, Quick Banking, Clickable name in loader, Quick RR buttons
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
+// @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/LoreScript.user.js
+// @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/LoreScript.user.js
 // @match        https://www.torn.com/loader.php?sid=attack&user2ID=*
 // @match        https://www.torn.com/trade.php*
 // @match        https://www.torn.com/page.php?sid=russianRoulette*
