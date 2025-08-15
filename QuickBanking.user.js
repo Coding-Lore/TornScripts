@@ -15,278 +15,180 @@
     'use strict';
 
     /** --------------------------
-     *  Shared Utility Functions
+     *  Shared Helpers
      *  -------------------------- */
-    async function waitForElement(querySelector, timeout = 10000) {
-        return new Promise((resolve, reject) => {
-            const element = document.querySelector(querySelector);
-            if (element) return resolve(element);
-
-            const observer = new MutationObserver(() => {
-                const el = document.querySelector(querySelector);
-                if (el) {
-                    observer.disconnect();
-                    resolve(el);
-                }
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-
-            if (timeout) {
-                setTimeout(() => {
-                    observer.disconnect();
-                    reject(new Error(`Timeout waiting for element: ${querySelector}`));
-                }, timeout);
-            }
-        });
-    }
-
     const formatNumber = (n) => n.toLocaleString('en-US');
     const parseNumber = (str) => parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
-
     const parseShorthand = (str) => {
-        const multiplierMap = { k: 1_000, m: 1_000_000, b: 1_000_000_000 };
-        let inputStr = str.trim().toLowerCase();
-        let multiplier = 1;
-        const lastChar = inputStr.slice(-1);
-        if (multiplierMap[lastChar]) {
-            multiplier = multiplierMap[lastChar];
-            inputStr = inputStr.slice(0, -1);
+        const map = { k: 1_000, m: 1_000_000, b: 1_000_000_000 };
+        let s = str.trim().toLowerCase();
+        let mul = 1;
+        if (map[s.slice(-1)]) {
+            mul = map[s.slice(-1)];
+            s = s.slice(0, -1);
         }
-        const numeric = parseFloat(inputStr.replace(/[^0-9.]/g, '')) || 0;
-        return Math.floor(numeric * multiplier);
+        const num = parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+        return Math.floor(num * mul);
     };
-
     const getTradePageCash = () => {
         const el = document.querySelector('.money-value');
-        return el ? parseInt(el.textContent.replace(/[^0-9]/g, ''), 10) : 0;
+        return el ? parseNumber(el.textContent) : 0;
     };
 
-    const waitForInput = () => new Promise((resolve) => {
-        const check = () => {
-            const inputs = document.querySelectorAll('.user-id.input-money');
-            if (inputs.length >= 1) return resolve(inputs);
-            requestAnimationFrame(check);
-        };
-        check();
+    const waitForElement = (sel) => new Promise((resolve) => {
+        const el = document.querySelector(sel);
+        if (el) return resolve(el);
+        const obs = new MutationObserver(() => {
+            const el2 = document.querySelector(sel);
+            if (el2) {
+                obs.disconnect();
+                resolve(el2);
+            }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
     });
 
     /** --------------------------
-     *  Quick Banking Button Logic
+     *  Quick Bank Button
      *  -------------------------- */
     async function addBankButton() {
-        const hash = window.location.hash;
-        if (!hash.includes("step=view") && !hash.includes("sub_step=addmoney2")) {
-            const existingBtn = document.getElementById("customTradeBtn");
-            if (existingBtn) existingBtn.remove();
+        if (!location.hash.includes("step=view") && !location.hash.includes("sub_step=addmoney2")) {
+            document.getElementById("customTradeBtn")?.remove();
             return;
         }
 
-        let container;
-        try {
-            container = await waitForElement('[class*="color2"]');
-        } catch {
-            container = document.querySelector(`[class="points-mobile___gpalH"]`)?.children[0];
-        }
-        if (!container) return;
+        const container = await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
+        if (!container || document.getElementById("customTradeBtn")) return;
 
-        if (document.getElementById("customTradeBtn")) return;
-
-        const bankAllButton = document.createElement("button");
-        bankAllButton.className = "torn-btn orange";
-        bankAllButton.id = "customTradeBtn";
-        bankAllButton.style.top = "3px";
-        bankAllButton.style.display = "block";
-        bankAllButton.innerHTML = "<strong>&emsp;Bank&emsp;</strong>";
-
-        bankAllButton.addEventListener("click", () => {
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const tradeId = hashParams.get('ID');
+        const btn = document.createElement("button");
+        btn.className = "torn-btn orange";
+        btn.id = "customTradeBtn";
+        btn.style.cssText = "top:3px;display:block";
+        btn.innerHTML = "<strong>&emsp;Bank&emsp;</strong>";
+        btn.addEventListener("click", () => {
+            const tradeId = new URLSearchParams(location.hash.substring(1)).get('ID');
             if (!tradeId) return;
-
-            const userMoneyElem = document.querySelector("#user-money");
-            if (!userMoneyElem) return;
-
-            const dollars = parseInt(userMoneyElem.getAttribute('data-money'));
-            if (!dollars || dollars === 0) return;
-
-            let leftUser = document.querySelector(`[class="user left"]`) || document.querySelector(`[class="user left tt-modified"]`);
-            if (!leftUser) return;
-
-            let tradeElem = leftUser.querySelector(`[class="name left"]`);
+            const dollars = parseInt(document.querySelector("#user-money")?.dataset.money || "0");
+            if (!dollars) return;
             let moneyInTrade = 0;
-            if (tradeElem) {
-                const txt = tradeElem.innerText;
-                const match = txt.match(/\$([\d,]+)/);
-                if (match && match[1]) {
-                    moneyInTrade = parseInt(match[1].replace(/,/g, ""));
-                }
-            }
-            window.location.href = `https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars + moneyInTrade}`;
+            const match = document.querySelector('.user.left .name.left')?.innerText.match(/\$([\d,]+)/);
+            if (match) moneyInTrade = parseNumber(match[1]);
+            location.href = `https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars + moneyInTrade}`;
         });
 
-        const wrapper = document.createElement("div");
-        wrapper.style.display = "flex";
-        wrapper.style.justifyContent = "center";
-        wrapper.style.margin = "8px 0";
-        wrapper.appendChild(bankAllButton);
-        container.before(wrapper);
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;justify-content:center;margin:8px 0";
+        wrap.appendChild(btn);
+        container.before(wrap);
     }
 
     /** --------------------------
-     *  Ghost Trade Remover Logic
+     *  Ghost Trade Remover
      *  -------------------------- */
-    function insertGhostButtons(input, sync) {
-        if (document.querySelector('#ghost-trade-helper')) return;
+    function addGhostButtons(input, sync) {
+        if (document.getElementById("ghost-trade-helper")) return;
+        const container = document.createElement("div");
+        container.id = "ghost-trade-helper";
+        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
 
-        const container = document.createElement('div');
-        container.id = 'ghost-trade-helper';
-        container.style.marginTop = '10px';
-        container.style.display = 'flex';
-        container.style.flexWrap = 'wrap';
-        container.style.gap = '4px';
-
-        const createStyledButton = (label, onClick) => {
-            const btn = document.createElement('button');
-            btn.className = 'torn-btn orange';
-            btn.style.top = '3px';
-            btn.style.display = 'block';
-            btn.innerHTML = `<strong> ${label} </strong>`;
-            btn.onclick = (e) => {
-                e.preventDefault();
-                onClick();
-            };
-            return btn;
+        const mkBtn = (label, action) => {
+            const b = document.createElement("button");
+            b.className = "torn-btn orange";
+            b.style.cssText = "top:3px;display:block";
+            b.innerHTML = `<strong> ${label} </strong>`;
+            b.onclick = e => { e.preventDefault(); action(); };
+            return b;
         };
 
-        const PRESET_BUTTONS = [
-            ['-100k', -100_000],
-            ['-500k', -500_000],
-            ['-1m', -1_000_000],
-            ['-10m', -10_000_000],
-            ['-100m', -100_000_000],
-            ['-1b', -1_000_000_000],
-        ];
-
-        PRESET_BUTTONS.forEach(([label, amount]) => {
-            const btn = createStyledButton(label, () => {
-                const current = parseNumber(input.value);
-                const newValue = Math.max(0, current + amount);
-                input.value = formatNumber(newValue);
+        [
+            ['-100k', -100_000], ['-500k', -500_000], ['-1m', -1_000_000],
+            ['-10m', -10_000_000], ['-100m', -100_000_000], ['-1b', -1_000_000_000]
+        ].forEach(([label, amt]) => {
+            container.appendChild(mkBtn(label, () => {
+                const newVal = Math.max(0, parseNumber(input.value) + amt);
+                input.value = formatNumber(newVal);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 sync();
-            });
-            container.appendChild(btn);
+            }));
         });
 
-        const custom = createStyledButton('Custom', () => {
-            const val = prompt('Enter amount to subtract');
+        container.appendChild(mkBtn('Custom', () => {
+            const val = prompt('Enter amount to subtract (e.g. 45k, 7m, 5b):');
             if (!val) return;
             const sub = parseShorthand(val);
-            const current = parseNumber(input.value);
-            const newValue = Math.max(0, current - sub);
-            input.value = formatNumber(newValue);
+            const newVal = Math.max(0, parseNumber(input.value) - sub);
+            input.value = formatNumber(newVal);
             input.dispatchEvent(new Event('input', { bubbles: true }));
             sync();
-        });
-        container.appendChild(custom);
+        }));
 
-        const paste = createStyledButton('Paste', async () => {
+        container.appendChild(mkBtn('Paste', async () => {
             try {
                 const text = await navigator.clipboard.readText();
                 const sub = parseShorthand(text);
-                const current = parseNumber(input.value);
-                const newValue = Math.max(0, current - sub);
-                input.value = formatNumber(newValue);
+                const newVal = Math.max(0, parseNumber(input.value) - sub);
+                input.value = formatNumber(newVal);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 sync();
-            } catch {
-                alert('Clipboard access denied.');
-            }
-        });
-        container.appendChild(paste);
+            } catch { alert('Clipboard access denied.'); }
+        }));
 
         input.parentElement.insertAdjacentElement('afterend', container);
     }
 
-    function observeTradeCash(input) {
+    function observeWalletSync(input) {
         let lastWallet = getTradePageCash();
         let lastInput = parseNumber(input.value);
 
-        const sync = () => {
-            lastWallet = getTradePageCash();
-            lastInput = parseNumber(input.value);
-        };
-
-        const applyNewValue = () => {
+        const sync = () => { lastWallet = getTradePageCash(); lastInput = parseNumber(input.value); };
+        const apply = () => {
             const newWallet = getTradePageCash();
             if (newWallet === lastWallet) return;
             const delta = lastInput - lastWallet;
-            const newValue = Math.max(0, newWallet + delta);
-            input.value = formatNumber(newValue);
+            const newVal = Math.max(0, newWallet + delta);
+            input.value = formatNumber(newVal);
             input.dispatchEvent(new Event('input', { bubbles: true }));
             lastWallet = newWallet;
-            lastInput = newValue;
+            lastInput = newVal;
         };
 
         const node = document.querySelector('.money-value');
-        if (!node) return;
-
-        const observer = new MutationObserver(applyNewValue);
-        observer.observe(node, { childList: true, characterData: true, subtree: true });
-
-        setInterval(applyNewValue, 500);
+        if (node) new MutationObserver(apply).observe(node, { childList: true, subtree: true });
+        setInterval(apply, 500);
         return sync;
     }
 
-    function waitForLineBreakTarget() {
-        const check = () => {
-            const p = Array.from(document.querySelectorAll('p')).find(p =>
-                p.textContent.includes('Enter in the amount of money you want to trade.') &&
-                p.textContent.includes('You have $') &&
-                !p.innerHTML.includes('<br>') &&
-                !p.dataset.lineBreakFixed
-            );
-            if (p) {
-                p.innerHTML = p.innerHTML.replace('. You have', '.<br>You have');
-                p.dataset.lineBreakFixed = 'true';
-            } else {
-                requestAnimationFrame(check);
-            }
-        };
-        requestAnimationFrame(check);
+    function fixLineBreak() {
+        const p = Array.from(document.querySelectorAll('p')).find(p =>
+            p.textContent.includes('Enter in the amount of money you want to trade.') &&
+            p.textContent.includes('You have $') &&
+            !p.innerHTML.includes('<br>')
+        );
+        if (p) p.innerHTML = p.innerHTML.replace('. You have', '.<br>You have');
     }
 
     /** --------------------------
-     *  Main Init
+     *  Unified Init
      *  -------------------------- */
-    async function initTradeEnhancer() {
+    async function init() {
         await addBankButton();
-
-        const [input] = await waitForInput();
+        const input = document.querySelector('.user-id.input-money');
         if (!input) return;
 
-        const wallet = getTradePageCash();
-        const current = parseNumber(input.value);
-        input.value = formatNumber(wallet + current);
+        input.value = formatNumber(getTradePageCash() + parseNumber(input.value));
         input.dispatchEvent(new Event('input', { bubbles: true }));
 
-        const sync = observeTradeCash(input);
-        insertGhostButtons(input, sync);
+        const sync = observeWalletSync(input);
+        addGhostButtons(input, sync);
         sync();
-        waitForLineBreakTarget();
+        fixLineBreak();
     }
 
-    const observer = new MutationObserver(() => {
-        if (location.pathname === '/trade.php') {
-            initTradeEnhancer();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // One observer for everything
+    new MutationObserver(() => {
+        if (location.pathname === '/trade.php') init();
+    }).observe(document.body, { childList: true, subtree: true });
 
-    window.addEventListener("hashchange", () => {
-        initTradeEnhancer();
-    });
-
-    initTradeEnhancer();
+    window.addEventListener("hashchange", init);
+    init();
 })();
