@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Quick Banking!
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      1.2
-// @description  Bank all cash in trades + buttons to subtract preset/custom amounts, supports shorthand (k/m/b) and paste
+// @version      1.2.1
+// @description  Bank all cash in trades + buttons to subtract preset/custom amounts
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
 // @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/QuickBanking.user.js
@@ -180,7 +180,7 @@
         });
 
         const custom = createStyledButton('Custom', () => {
-            const val = prompt('Enter amount to subtract (e.g. 45k, 7m, 5b):');
+            const val = prompt('Enter amount to subtract');
             if (!val) return;
             const sub = parseShorthand(val);
             const current = parseNumber(input.value);
