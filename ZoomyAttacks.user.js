@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Zoomy Attacks
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      1.0
+// @version      1.0.1
 // @description  Make Attacks go Zoom
 // @author       Lore
-// @match        https://www.torn.com/loader.php?sid=attack&user2ID=*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
+// @match        https://www.torn.com/loader.php?sid=attack&user2ID=*
 // @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/ZoomyAttacks.user.js
 // @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/ZoomyAttacks.user.js
 // @license      MIT
