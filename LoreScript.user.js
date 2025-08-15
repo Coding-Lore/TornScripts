@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lore's Ultimate Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      4.9
-// @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Clickable Name, Quick RR Buttons (with toggles)
+// @version      4.9.1
+// @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Clickable Name, Quick RR Buttons
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
 // @downloadURL  https://raw.githubusercontent.com/Coding-Lore/TornScripts/main/LoreScript.user.js
@@ -18,12 +18,14 @@
     'use strict';
 
     /** --------------------------
-     *  Feature Toggles
+     *  Feature Toggles (Modular)
      *  -------------------------- */
     const config = {
-        attackEnhancements: true,   // Zoomy + clickable opponent name
-        quickBanking: true,         // Bank all button + Ghost Trade buttons
-        rrButtons: true             // Russian Roulette quick buttons
+        attackEnhancements: true,
+        quickBanking: true,
+        ghostTradeButtons: true,
+        rrButtons: true,
+        tradeAutoSync: true
     };
 
     /** --------------------------
@@ -33,7 +35,7 @@
     const parseNumber = str => parseInt(str.replace(/[^0-9]/g,''),10)||0;
     const parseShorthand = str => {
         const map={k:1_000,m:1_000_000,b:1_000_000_000};
-        let s=str.trim().toLowerCase(); let mul=1;
+        let s=str.trim().toLowerCase(), mul=1;
         if(map[s.slice(-1)]){ mul=map[s.slice(-1)]; s=s.slice(0,-1); }
         const num=parseFloat(s.replace(/[^0-9.]/g,''))||0;
         return Math.floor(num*mul);
@@ -51,14 +53,13 @@
     const getTradeCash = ()=> document.querySelector('.money-value') ? parseNumber(document.querySelector('.money-value').textContent) : 0;
 
     /** --------------------------
-     *  Main Observer Logic
+     *  Feature Modules
      *  -------------------------- */
-    const observer = new MutationObserver(()=>{
+    const modules = {
 
-        /** --------------------------
-         *  Attack Page Enhancements
-         *  -------------------------- */
-        if(config.attackEnhancements && location.href.includes('loader.php?sid=attack&user2ID=')){
+        /** Attack Enhancements: Zoomy + Clickable Name */
+        attackEnhancements: function(){
+            if(!config.attackEnhancements || !location.href.includes('loader.php?sid=attack&user2ID=')) return;
             const topStyle="0";
             let attackType=Number(localStorage.getItem("torn-attack-type"))||2;
 
@@ -116,70 +117,89 @@
                     opponent.parentNode.replaceChild(link,opponent);
                 }
             }
-        }
+        },
 
-        /** --------------------------
-         *  Quick Banking & Ghost Trade
-         *  -------------------------- */
-        if(config.quickBanking && location.pathname==='/trade.php'){
-            (async function(){
-                // Bank Button
-                if((location.hash.includes("step=view") || location.hash.includes("sub_step=addmoney2")) && !document.getElementById("customTradeBtn")){
-                    const container=await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
-                    if(container){
-                        const btn=document.createElement("button");
-                        btn.className="torn-btn orange"; btn.id="customTradeBtn"; btn.style.cssText="top:3px;display:block";
-                        btn.innerHTML="<strong>&emsp;Bank&emsp;</strong>";
-                        btn.addEventListener("click",()=>{
-                            const tradeId=new URLSearchParams(location.hash.substring(1)).get('ID');
-                            if(!tradeId) return;
-                            const dollars=parseInt(document.querySelector("#user-money")?.dataset.money||"0");
-                            if(!dollars) return;
-                            let moneyInTrade=0;
-                            const match=document.querySelector('.user.left .name.left')?.innerText.match(/\$([\d,]+)/);
-                            if(match) moneyInTrade=parseNumber(match[1]);
-                            location.href=`https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars+moneyInTrade}`;
-                        });
-                        const wrap=document.createElement("div");
-                        wrap.style.cssText="display:flex;justify-content:center;margin:8px 0";
-                        wrap.appendChild(btn);
-                        container.before(wrap);
-                    }
+        /** Quick Banking Button */
+        quickBanking: async function(){
+            if(!config.quickBanking || location.pathname!=='/trade.php') return;
+            if((location.hash.includes("step=view") || location.hash.includes("sub_step=addmoney2")) && !document.getElementById("customTradeBtn")){
+                const container=await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
+                if(container){
+                    const btn=document.createElement("button");
+                    btn.className="torn-btn orange"; btn.id="customTradeBtn"; btn.style.cssText="top:3px;display:block";
+                    btn.innerHTML="<strong>&emsp;Bank&emsp;</strong>";
+                    btn.addEventListener("click",()=>{
+                        const tradeId=new URLSearchParams(location.hash.substring(1)).get('ID');
+                        if(!tradeId) return;
+                        const dollars=parseInt(document.querySelector("#user-money")?.dataset.money||"0");
+                        if(!dollars) return;
+                        let moneyInTrade=0;
+                        const match=document.querySelector('.user.left .name.left')?.innerText.match(/\$([\d,]+)/);
+                        if(match) moneyInTrade=parseNumber(match[1]);
+                        location.href=`https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars+moneyInTrade}`;
+                    });
+                    const wrap=document.createElement("div");
+                    wrap.style.cssText="display:flex;justify-content:center;margin:8px 0";
+                    wrap.appendChild(btn);
+                    container.before(wrap);
                 }
+            }
+        },
 
-                // Ghost Buttons
-                const input=document.querySelector('.user-id.input-money');
-                if(input && !document.getElementById("ghost-trade-helper")){
-                    const sync=()=>{};
-                    const mkBtn=(label,action)=>{
-                        const b=document.createElement("button"); b.className="torn-btn orange"; b.style.cssText="top:3px;display:block";
-                        b.innerHTML=`<strong> ${label} </strong>`; b.onclick=e=>{ e.preventDefault(); action(); };
-                        return b;
-                    };
-                    const container=document.createElement("div"); container.id="ghost-trade-helper"; container.style.cssText="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
-                    [['-100k',-100_000],['-500k',-500_000],['-1m',-1_000_000],['-10m',-10_000_000],['-100m',-100_000_000],['-1b',-1_000_000_000]]
-                    .forEach(([label,amt])=>{ container.appendChild(mkBtn(label,()=>{ const newVal=Math.max(0,parseNumber(input.value)+amt); input.value=formatNumber(newVal); input.dispatchEvent(new Event('input',{bubbles:true})); }));});
-                    container.appendChild(mkBtn('Custom',()=>{
-                        const val=prompt('Enter amount to subtract (e.g. 45k,7m,5b):'); if(!val) return;
-                        const sub=parseShorthand(val);
-                        const newVal=Math.max(0,parseNumber(input.value)-sub); input.value=formatNumber(newVal);
-                        input.dispatchEvent(new Event('input',{bubbles:true}));
-                    }));
-                    container.appendChild(mkBtn('Paste',async()=>{
-                        try{ const text=await navigator.clipboard.readText(); const sub=parseShorthand(text);
-                            const newVal=Math.max(0,parseNumber(input.value)-sub); input.value=formatNumber(newVal);
-                            input.dispatchEvent(new Event('input',{bubbles:true}));
-                        }catch{alert('Clipboard access denied.');}
-                    }));
-                    input.parentElement.insertAdjacentElement('afterend',container);
-                }
-            })();
-        }
+        /** Ghost Trade Buttons */
+        ghostTradeButtons: async function(){
+            if(!config.ghostTradeButtons || location.pathname!=='/trade.php') return;
+            const input=document.querySelector('.user-id.input-money');
+            if(!input || document.getElementById("ghost-trade-helper")) return;
 
-        /** --------------------------
-         *  Russian Roulette Buttons
-         *  -------------------------- */
-        if(config.rrButtons && location.href.includes('russianRoulette') && !document.getElementById('rr-quick-buttons')){
+            const mkBtn=(label,action)=>{
+                const b=document.createElement("button"); b.className="torn-btn orange"; b.style.cssText="top:3px;display:block";
+                b.innerHTML=`<strong> ${label} </strong>`; b.onclick=e=>{ e.preventDefault(); action(); };
+                return b;
+            };
+            const container=document.createElement("div"); container.id="ghost-trade-helper"; container.style.cssText="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
+            [['-100k',-100_000],['-500k',-500_000],['-1m',-1_000_000],['-10m',-10_000_000],['-100m',-100_000_000],['-1b',-1_000_000_000]]
+            .forEach(([label,amt])=>{ container.appendChild(mkBtn(label,()=>{ input.value=formatNumber(Math.max(0,parseNumber(input.value)+amt)); input.dispatchEvent(new Event('input',{bubbles:true})); })); });
+            container.appendChild(mkBtn('Custom',()=>{
+                const val=prompt('Enter amount to subtract (e.g. 45k,7m,5b):'); if(!val) return;
+                const sub=parseShorthand(val);
+                input.value=formatNumber(Math.max(0,parseNumber(input.value)-sub));
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+            }));
+            container.appendChild(mkBtn('Paste',async()=>{
+                try{ const text=await navigator.clipboard.readText(); const sub=parseShorthand(text);
+                    input.value=formatNumber(Math.max(0,parseNumber(input.value)-sub));
+                    input.dispatchEvent(new Event('input',{bubbles:true}));
+                }catch{alert('Clipboard access denied.');}
+            }));
+            input.parentElement.insertAdjacentElement('afterend',container);
+        },
+
+        /** Auto-Sync Wallet Input */
+        tradeAutoSync: function(){
+            if(!config.tradeAutoSync || location.pathname!=='/trade.php') return;
+            const input=document.querySelector('.user-id.input-money');
+            if(!input) return;
+            let lastWallet=getTradeCash(), lastInput=parseNumber(input.value);
+
+            const apply=()=>{
+                const newWallet=getTradeCash();
+                if(newWallet===lastWallet) return;
+                const delta=lastInput-lastWallet;
+                const newVal=Math.max(0,newWallet+delta);
+                input.value=formatNumber(newVal);
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                lastWallet=newWallet; lastInput=newVal;
+            };
+
+            const node=document.querySelector('.money-value');
+            if(node) new MutationObserver(apply).observe(node,{childList:true,subtree:true});
+            setInterval(apply,500);
+        },
+
+        /** Russian Roulette Buttons */
+        rrButtons: function(){
+            if(!config.rrButtons || !location.href.includes('russianRoulette') || document.getElementById('rr-quick-buttons')) return;
             const RFCV='689e7d891504d';
             const container=document.createElement('div'); container.id='rr-quick-buttons';
             container.style.cssText='position:fixed;top:120px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:5px;';
@@ -211,8 +231,17 @@
             document.body.appendChild(container);
         }
 
-    });
+    };
 
-    observer.observe(document.body,{childList:true,subtree:true});
+    /** --------------------------
+     *  Single Observer Trigger
+     *  -------------------------- */
+    const mainObserver=new MutationObserver(()=>{
+        Object.values(modules).forEach(fn=>fn());
+    });
+    mainObserver.observe(document.body,{childList:true,subtree:true});
+
+    // Run once immediately
+    Object.values(modules).forEach(fn=>fn());
 
 })();
