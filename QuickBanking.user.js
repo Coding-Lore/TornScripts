@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Banking!
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      1.2.1
+// @version      1.2.2
 // @description  Bank all cash in trades + buttons to subtract preset/custom amounts
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
