@@ -5,6 +5,10 @@
 // @description  Buttons to quickly play RR, including a delayed shot (3 sec)
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
+// @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/QuickRR.user.js
+// @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/QuickRR.user.js
+
+
 // @match        https://www.torn.com/page.php?sid=russianRoulette*
 // @grant        none
 // @license      MIT
