@@ -221,44 +221,92 @@
             setInterval(apply,500);
         },
 
-        /** Russian Roulette Buttons */
+        /** Russian Roulette Quick Buttons */
         rrButtons: function(){
             if(!config.rrButtons || !location.href.includes('russianRoulette') || document.getElementById('rr-quick-buttons')) return;
-            const RFCV='689e7d891504d';
-            const container=document.createElement('div'); container.id='rr-quick-buttons';
+
+            // --- Get RFCV from cookies ---
+            function getRFCVFromCookie() {
+                const match = document.cookie.match(/(?:rfc_v|rfc_id)=([a-f0-9]+)/);
+                return match ? match[1] : null;
+            }
+
+            // --- Fire shots ---
+            async function fireShots(num, btn){
+                try {
+                    if(btn) btn.disabled = true;
+                    const RFCV = getRFCVFromCookie();
+                    if(!RFCV) throw new Error("RFCV not found in cookies");
+
+                    const form = new FormData();
+                    form.append("sid","russianRouletteData");
+                    form.append("rfcv", RFCV);
+                    form.append("step","makeTurn");
+                    form.append("shotsAmount", num);
+
+                    const resp = await fetch(`https://www.torn.com/page.php?sid=russianRouletteData&rfcv=${RFCV}`,{
+                        method:"POST",
+                        body: form,
+                        credentials:"include",
+                        headers:{ "X-Requested-With":"XMLHttpRequest" }
+                    });
+
+                    const data = await resp.json().catch(()=>({}));
+                    console.log("RR response:", data);
+
+                } catch(err){
+                    console.error("RR error:", err);
+                } finally {
+                    if(btn) btn.disabled = false;
+                }
+            }
+
+            // --- UI container ---
+            const container=document.createElement('div');
+            container.id='rr-quick-buttons';
             container.style.cssText='position:fixed;top:120px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:5px;';
 
-            const fireShots=(num)=>{
-                const form=new FormData(); form.append('sid','russianRouletteData'); form.append('rfcv',RFCV);
-                form.append('step','makeTurn'); form.append('shotsAmount',num);
-                fetch(`https://www.torn.com/page.php?sid=russianRouletteData&rfcv=${RFCV}`,{method:'POST',body:form,credentials:'include',headers:{'X-Requested-With':'XMLHttpRequest'}})
-                .then(r=>r.json()).then(d=>console.log('RR response:',d)).catch(err=>console.error(err));
-            };
-
+            // --- Shoot buttons ---
             [1,2,3].forEach(num=>{
-                const btn=document.createElement('button'); btn.className='torn-btn orange';
-                btn.style.cssText='top:3px;display:flex;align-items:center;justify-content:center;margin:0;padding:5px 10px;outline:none';
+                const btn=document.createElement('button');
+                btn.className='torn-btn orange';
+                btn.style.cssText='display:flex;align-items:center;justify-content:center;margin:0;padding:5px 10px;outline:none';
                 btn.innerHTML=`<strong>&emsp;Shoot ${num}&emsp;</strong>`;
                 btn.addEventListener('mousedown',e=>e.preventDefault());
-                btn.addEventListener('click',()=>fireShots(num));
+                btn.addEventListener('click',()=>fireShots(num,btn));
                 container.appendChild(btn);
             });
 
-            const delayedBtn=document.createElement('button'); delayedBtn.className='torn-btn orange';
-            delayedBtn.style.cssText='top:3px;display:flex;align-items:center;justify-content:center;margin:0;padding:5px 10px;outline:none';
+            // --- Delay button ---
+            const delayedBtn=document.createElement('button');
+            delayedBtn.className='torn-btn orange';
+            delayedBtn.style.cssText='display:flex;align-items:center;justify-content:center;margin:0;padding:5px 10px;outline:none';
             delayedBtn.innerHTML=`<strong>&emsp;Delay&emsp;</strong>`;
             delayedBtn.addEventListener('mousedown',e=>e.preventDefault());
             delayedBtn.addEventListener('click',()=>{
-                let countdown=3; delayedBtn.disabled=true; const original=delayedBtn.innerHTML;
+                let countdown=3;
+                delayedBtn.disabled=true;
+                const original=delayedBtn.innerHTML;
                 const tick=()=>{
-                    if(countdown>0){ delayedBtn.innerHTML=`<strong>&emsp;${countdown}&emsp;</strong>`; countdown--; setTimeout(tick,1000);}
-                    else { delayedBtn.innerHTML=`<strong>&emsp;Firing&emsp;</strong>`; fireShots(1); setTimeout(()=>{delayedBtn.disabled=false; delayedBtn.innerHTML=original;},500);}
-                }; tick();
+                    if(countdown>0){
+                        delayedBtn.innerHTML=`<strong>&emsp;${countdown}&emsp;</strong>`;
+                        countdown--;
+                        setTimeout(tick,1000);
+                    } else {
+                        delayedBtn.innerHTML=`<strong>&emsp;Firing&emsp;</strong>`;
+                        fireShots(1,delayedBtn);
+                        setTimeout(()=>{
+                            delayedBtn.disabled=false;
+                            delayedBtn.innerHTML=original;
+                        },500);
+                    }
+                };
+                tick();
             });
             container.appendChild(delayedBtn);
+
             document.body.appendChild(container);
         }
-
     };
 
     /** --------------------------
