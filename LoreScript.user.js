@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lore's Cool Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      4.9.3
+// @version      4.9.4
 // @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Clickable Name, Quick RR Buttons
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
@@ -179,11 +179,11 @@
             };
 
             const container=document.createElement("div"); container.id="ghost-trade-helper"; container.style.cssText="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
-            [['-100k',-100_000],['-500k',-500_000],['-1m',-1_000_000],['-10m',-10_000_000],['-100m',-100_000_000],['-1b',-1_000_000_000]]
+            [['-100k',-100_000],['-1m',-1_000_000],['-10m',-10_000_000],['-100m',-100_000_000],['-1b',-1_000_000_000]]
             .forEach(([label,amt])=>{ container.appendChild(mkBtn(label,()=>{ input.value=formatNumber(Math.max(0,parseNumber(input.value)+amt)); input.dispatchEvent(new Event('input',{bubbles:true})); })); });
 
             container.appendChild(mkBtn('Custom',()=>{
-                const val=prompt('Enter amount to subtract (e.g. 45k,7m,5b):'); if(!val) return;
+                const val=prompt('Enter amount to subtract:'); if(!val) return;
                 const sub=parseShorthand(val);
                 input.value=formatNumber(Math.max(0,parseNumber(input.value)-sub));
                 input.dispatchEvent(new Event('input',{bubbles:true}));
