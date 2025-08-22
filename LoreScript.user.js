@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lore's Cool Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      4.9.4
+// @version      4.9.41
 // @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Quick RR Buttons
 // @author       Lore 2556042
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
