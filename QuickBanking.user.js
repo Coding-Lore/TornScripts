@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Banking!
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      1.3.2
+// @version      1.3.3
 // @description  Bank all cash in trades + buttons to subtract preset/custom amounts
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
@@ -98,7 +98,7 @@
         if (document.getElementById("ghost-trade-helper")) return;
         const container = document.createElement("div");
         container.id = "ghost-trade-helper";
-        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;align-items:center";
+        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
 
         const mkBtn = (label, action) => {
             const b = document.createElement("button");
@@ -126,7 +126,7 @@
             // Custom and Paste buttons (always there)
             container.appendChild(mkBtn('Custom', () => {
                 const val = prompt('Enter amount (e.g. 45k, 7m, 5b):');
-                if (!val) return;
+                if (val === null) return; // cancel pressed
                 const sub = parseShorthand(val);
                 const newVal = Math.max(0, parseNumber(input.value) - sub);
                 input.value = formatNumber(newVal);
@@ -137,6 +137,7 @@
             container.appendChild(mkBtn('Paste', async () => {
                 try {
                     const text = await navigator.clipboard.readText();
+                    if (!text) return;
                     const sub = parseShorthand(text);
                     const newVal = Math.max(0, parseNumber(input.value) - sub);
                     input.value = formatNumber(newVal);
@@ -146,26 +147,23 @@
             }));
 
             // Settings button
-            const settingsBtn = mkBtn('⚙️', () => {
-                // Ask user if they want to toggle auto-sync
-                const toggleSync = confirm(`Auto-sync is currently ${settings.autoSync ? 'ON' : 'OFF'}. Press OK to toggle, Cancel to leave as-is.`);
-                if (toggleSync) {
+            container.appendChild(mkBtn('⚙️', () => {
+                const toggle = confirm(`Auto-sync is currently ${settings.autoSync ? 'ON' : 'OFF'}. Toggle?`);
+                if (toggle) { // Only change if OK pressed
                     settings.autoSync = !settings.autoSync;
                     saveSettings();
                 }
 
-                // Always show presets prompt
                 const selected = prompt(
                     'Enter preset buttons you want (comma separated, e.g., -100k,-500k,-1m,-10m,-100m,-1b). Leave empty for none:',
                     settings.presets.join(',')
                 );
 
-                if (selected === null) return; // Cancel here does nothing
-                settings.presets = selected.split(',').map(s => s.trim()).filter(s => s.length > 0); // allow empty
+                if (selected === null) return; // cancel pressed
+                settings.presets = selected.split(',').map(s => s.trim()).filter(s => s.length > 0);
                 saveSettings();
                 renderPresets();
-            });
-            container.appendChild(settingsBtn);
+            }));
         };
 
         renderPresets();
