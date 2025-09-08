@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Banking!
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      1.2.2
+// @version      1.3.2
 // @description  Bank all cash in trades + buttons to subtract preset/custom amounts
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
@@ -15,11 +15,11 @@
     'use strict';
 
     /** --------------------------
-     *  Shared Helpers
+     *  Helpers
      *  -------------------------- */
-    const formatNumber = (n) => n.toLocaleString('en-US');
-    const parseNumber = (str) => parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
-    const parseShorthand = (str) => {
+    const formatNumber = n => n.toLocaleString('en-US');
+    const parseNumber = str => parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
+    const parseShorthand = str => {
         const map = { k: 1_000, m: 1_000_000, b: 1_000_000_000 };
         let s = str.trim().toLowerCase();
         let mul = 1;
@@ -34,8 +34,7 @@
         const el = document.querySelector('.money-value');
         return el ? parseNumber(el.textContent) : 0;
     };
-
-    const waitForElement = (sel) => new Promise((resolve) => {
+    const waitForElement = sel => new Promise(resolve => {
         const el = document.querySelector(sel);
         if (el) return resolve(el);
         const obs = new MutationObserver(() => {
@@ -49,6 +48,17 @@
     });
 
     /** --------------------------
+     *  Settings
+     *  -------------------------- */
+    const defaultSettings = {
+        autoSync: true,
+        presets: ['-100k','-500k','-1m','-10m','-100m','-1b']
+    };
+    let settings = JSON.parse(localStorage.getItem('quickBankingSettings') || '{}');
+    settings = { ...defaultSettings, ...settings };
+    const saveSettings = () => localStorage.setItem('quickBankingSettings', JSON.stringify(settings));
+
+    /** --------------------------
      *  Quick Bank Button
      *  -------------------------- */
     async function addBankButton() {
@@ -56,7 +66,6 @@
             document.getElementById("customTradeBtn")?.remove();
             return;
         }
-
         const container = await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
         if (!container || document.getElementById("customTradeBtn")) return;
 
@@ -83,13 +92,13 @@
     }
 
     /** --------------------------
-     *  Ghost Trade Remover
+     *  Ghost Trade Buttons
      *  -------------------------- */
     function addGhostButtons(input, sync) {
         if (document.getElementById("ghost-trade-helper")) return;
         const container = document.createElement("div");
         container.id = "ghost-trade-helper";
-        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
+        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;align-items:center";
 
         const mkBtn = (label, action) => {
             const b = document.createElement("button");
@@ -100,48 +109,80 @@
             return b;
         };
 
-        [
-            ['-100k', -100_000], ['-500k', -500_000], ['-1m', -1_000_000],
-            ['-10m', -10_000_000], ['-100m', -100_000_000], ['-1b', -1_000_000_000]
-        ].forEach(([label, amt]) => {
-            container.appendChild(mkBtn(label, () => {
-                const newVal = Math.max(0, parseNumber(input.value) + amt);
-                input.value = formatNumber(newVal);
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                sync();
-            }));
-        });
+        const renderPresets = () => {
+            container.innerHTML = ''; // Clear first
 
-        container.appendChild(mkBtn('Custom', () => {
-            const val = prompt('Enter amount to subtract (e.g. 45k, 7m, 5b):');
-            if (!val) return;
-            const sub = parseShorthand(val);
-            const newVal = Math.max(0, parseNumber(input.value) - sub);
-            input.value = formatNumber(newVal);
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            sync();
-        }));
+            // Add selected preset buttons
+            settings.presets.forEach(label => {
+                const amt = parseShorthand(label.replace('-', ''));
+                container.appendChild(mkBtn(label, () => {
+                    const newVal = Math.max(0, parseNumber(input.value) + (label.startsWith('-') ? -amt : amt));
+                    input.value = formatNumber(newVal);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (settings.autoSync) sync();
+                }));
+            });
 
-        container.appendChild(mkBtn('Paste', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                const sub = parseShorthand(text);
+            // Custom and Paste buttons (always there)
+            container.appendChild(mkBtn('Custom', () => {
+                const val = prompt('Enter amount (e.g. 45k, 7m, 5b):');
+                if (!val) return;
+                const sub = parseShorthand(val);
                 const newVal = Math.max(0, parseNumber(input.value) - sub);
                 input.value = formatNumber(newVal);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
-                sync();
-            } catch { alert('Clipboard access denied.'); }
-        }));
+                if (settings.autoSync) sync();
+            }));
 
+            container.appendChild(mkBtn('Paste', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    const sub = parseShorthand(text);
+                    const newVal = Math.max(0, parseNumber(input.value) - sub);
+                    input.value = formatNumber(newVal);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (settings.autoSync) sync();
+                } catch { alert('Clipboard access denied.'); }
+            }));
+
+            // Settings button
+            const settingsBtn = mkBtn('⚙️', () => {
+                // Ask user if they want to toggle auto-sync
+                const toggleSync = confirm(`Auto-sync is currently ${settings.autoSync ? 'ON' : 'OFF'}. Press OK to toggle, Cancel to leave as-is.`);
+                if (toggleSync) {
+                    settings.autoSync = !settings.autoSync;
+                    saveSettings();
+                }
+
+                // Always show presets prompt
+                const selected = prompt(
+                    'Enter preset buttons you want (comma separated, e.g., -100k,-500k,-1m,-10m,-100m,-1b). Leave empty for none:',
+                    settings.presets.join(',')
+                );
+
+                if (selected === null) return; // Cancel here does nothing
+                settings.presets = selected.split(',').map(s => s.trim()).filter(s => s.length > 0); // allow empty
+                saveSettings();
+                renderPresets();
+            });
+            container.appendChild(settingsBtn);
+        };
+
+        renderPresets();
         input.parentElement.insertAdjacentElement('afterend', container);
     }
 
+    /** --------------------------
+     *  Wallet Sync
+     *  -------------------------- */
     function observeWalletSync(input) {
+        if (!settings.autoSync) return () => {};
         let lastWallet = getTradePageCash();
         let lastInput = parseNumber(input.value);
 
         const sync = () => { lastWallet = getTradePageCash(); lastInput = parseNumber(input.value); };
         const apply = () => {
+            if (!settings.autoSync) return;
             const newWallet = getTradePageCash();
             if (newWallet === lastWallet) return;
             const delta = lastInput - lastWallet;
@@ -168,7 +209,7 @@
     }
 
     /** --------------------------
-     *  Unified Init
+     *  Init
      *  -------------------------- */
     async function init() {
         await addBankButton();
@@ -180,14 +221,12 @@
 
         const sync = observeWalletSync(input);
         addGhostButtons(input, sync);
-        sync();
+        sync?.();
         fixLineBreak();
     }
 
-    // One observer for everything
-    new MutationObserver(() => {
-        if (location.pathname === '/trade.php') init();
-    }).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(() => { if (location.pathname === '/trade.php') init(); })
+        .observe(document.body, { childList: true, subtree: true });
 
     window.addEventListener("hashchange", init);
     init();
