@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lore's Cool Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      4.9.41
+// @version      4.9.61
 // @description  Zoomy Attacks, Quick Banking, Ghost Trade Buttons, Quick RR Buttons
 // @author       Lore 2556042
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
@@ -24,8 +24,7 @@
         attackEnhancements: true,
         quickBanking: true,
         ghostTradeButtons: true,
-        rrButtons: true,
-        tradeAutoSync: true
+        rrButtons: true
     };
 
     /** --------------------------
@@ -43,10 +42,7 @@
     const waitForElement = (sel,timeout=10000)=> new Promise((resolve,reject)=>{
         const el=document.querySelector(sel);
         if(el) return resolve(el);
-        const obs=new MutationObserver(()=>{
-            const e=document.querySelector(sel);
-            if(e){ obs.disconnect(); resolve(e); }
-        });
+        const obs=new MutationObserver(()=>{const e=document.querySelector(sel); if(e){ obs.disconnect(); resolve(e); }});
         obs.observe(document.body,{childList:true,subtree:true});
         if(timeout) setTimeout(()=>{obs.disconnect(); reject(`Timeout waiting for ${sel}`);},timeout);
     });
@@ -62,28 +58,25 @@
             if(!config.attackEnhancements || !location.href.includes('loader.php?sid=attack&user2ID=')) return;
             const dialog = document.querySelector('.dialog___Q0GdI');
             if (dialog) {
-                dialog.style.background = 'transparent';      // remove black
-                dialog.style.boxShadow = 'none';             // remove shadows
-                dialog.style.border = 'none';                // remove borders
+                dialog.style.background = 'transparent';
+                dialog.style.boxShadow = 'none';
+                dialog.style.border = 'none';
             }
 
             const colored = document.querySelector('.colored___sN72G');
             if (colored) {
-                colored.style.background = 'transparent';    // remove green
-                colored.style.boxShadow = 'none';            // remove shadows
-                colored.style.border = 'none';               // remove borders
+                colored.style.background = 'transparent';
+                colored.style.boxShadow = 'none';
+                colored.style.border = 'none';
             }
 
-
-            const topStyle="0";
             let attackType=Number(localStorage.getItem("torn-attack-type"))||2;
 
-            // Zoomy attack button style
             GM_addStyle(`
                 .modelWrap___j3kfA { max-width: 100%; }
                 .player___wiE8R:nth-child(2) .playerWindow___aDeDI { overflow: visible; }
                 .dialogButtons___nX4Bz {
-                    z-index:1000; position:absolute; top:${topStyle};
+                    z-index:1000; position:absolute; top:0;
                     display:flex; left:-300px; width:420px; justify-content:center;
                 }
                 .btn___RxE8_ { margin:0; padding:220px 25px !important; }
@@ -98,7 +91,6 @@
                 `:''}
             `);
 
-            // Attack type selector
             const container=document.querySelector(".titleContainer___QrlWP");
             if(container && !container.querySelector("fieldset")){
                 const div=document.createElement("div");
@@ -118,7 +110,6 @@
                 });
             }
 
-            // Clickable name (only once)
             const spans=document.querySelectorAll('span.userName___loAWK.user-name.left');
             if(spans.length>=2 && !spans[1].parentNode.querySelector('a')){
                 const user2ID=new URLSearchParams(window.location.search).get('user2ID');
@@ -137,101 +128,214 @@
             }
         },
 
-        /** Quick Banking Button */
-        quickBanking: async function(){
-            if(!config.quickBanking || location.pathname!=='/trade.php') return;
-            if(document.getElementById("customTradeBtn")) return;
+        /** Quick Banking (Rewritten to match standalone script) */
+quickBanking: async function () {
+    if (!config.quickBanking || location.pathname !== '/trade.php') return;
 
-            if((location.hash.includes("step=view") || location.hash.includes("sub_step=addmoney2"))){
-                const container=await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
-                if(!container || document.getElementById("customTradeBtn")) return;
+    /** --------------------------
+     *  Helpers (local to module)
+     *  -------------------------- */
+    const formatNumber = n => n.toLocaleString('en-US');
+    const parseNumber = str => parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
+    const parseShorthand = str => {
+        const map = { k: 1_000, m: 1_000_000, b: 1_000_000_000 };
+        let s = str.trim().toLowerCase(), mul = 1;
+        if (map[s.slice(-1)]) { mul = map[s.slice(-1)]; s = s.slice(0, -1); }
+        const num = parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+        return Math.floor(num * mul);
+    };
+    const getTradePageCash = () => {
+        const el = document.querySelector('.money-value');
+        return el ? parseNumber(el.textContent) : 0;
+    };
+    const waitForElement = sel => new Promise(resolve => {
+        const el = document.querySelector(sel);
+        if (el) return resolve(el);
+        const obs = new MutationObserver(() => {
+            const el2 = document.querySelector(sel);
+            if (el2) { obs.disconnect(); resolve(el2); }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+    });
 
-                const btn=document.createElement("button");
-                btn.className="torn-btn orange"; btn.id="customTradeBtn"; btn.style.cssText="top:3px;display:block";
-                btn.innerHTML="<strong>&emsp;Bank&emsp;</strong>";
-                btn.addEventListener("click",()=>{
-                    const tradeId=new URLSearchParams(location.hash.substring(1)).get('ID');
-                    if(!tradeId) return;
-                    const dollars=parseInt(document.querySelector("#user-money")?.dataset.money||"0");
-                    if(!dollars) return;
-                    let moneyInTrade=0;
-                    const match=document.querySelector('.user.left .name.left')?.innerText.match(/\$([\d,]+)/);
-                    if(match) moneyInTrade=parseNumber(match[1]);
-                    location.href=`https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars+moneyInTrade}`;
-                });
-                const wrap=document.createElement("div");
-                wrap.style.cssText="display:flex;justify-content:center;margin:8px 0";
-                wrap.appendChild(btn);
-                container.before(wrap);
-            }
-        },
+    /** --------------------------
+     *  Settings
+     *  -------------------------- */
+    const defaultSettings = {
+        autoSync: true,
+        presets: ['-100k','-500k','-1m','-10m','-100m','-1b']
+    };
+    let settings = JSON.parse(localStorage.getItem('quickBankingSettings') || '{}');
+    settings = { ...defaultSettings, ...settings };
+    const saveSettings = () => localStorage.setItem('quickBankingSettings', JSON.stringify(settings));
 
-        /** Ghost Trade Buttons */
-        ghostTradeButtons: async function(){
-            if(!config.ghostTradeButtons || location.pathname!=='/trade.php') return;
-            const input=document.querySelector('.user-id.input-money');
-            if(!input || document.getElementById("ghost-trade-helper")) return;
+    /** --------------------------
+     *  Bank Button
+     *  -------------------------- */
+    async function addBankButton() {
+        if (!location.hash.includes("step=view") && !location.hash.includes("sub_step=addmoney2")) {
+            document.getElementById("customTradeBtn")?.remove();
+            return;
+        }
+        const container = await waitForElement('[class*="color2"], .points-mobile___gpalH > :first-child');
+        if (!container || document.getElementById("customTradeBtn")) return;
 
-            const mkBtn=(label,action)=>{
-                const b=document.createElement("button"); b.className="torn-btn orange"; b.style.cssText="top:3px;display:block";
-                b.innerHTML=`<strong> ${label} </strong>`; b.onclick=e=>{ e.preventDefault(); action(); };
-                return b;
-            };
+        const btn = document.createElement("button");
+        btn.className = "torn-btn orange";
+        btn.id = "customTradeBtn";
+        btn.style.cssText = "top:3px;display:block";
+        btn.innerHTML = "<strong>&emsp;Bank&emsp;</strong>";
+        btn.addEventListener("click", () => {
+            const tradeId = new URLSearchParams(location.hash.substring(1)).get('ID');
+            if (!tradeId) return;
+            const dollars = parseInt(document.querySelector("#user-money")?.dataset.money || "0");
+            if (!dollars) return;
+            let moneyInTrade = 0;
+            const match = document.querySelector('.user.left .name.left')?.innerText.match(/\$([\d,]+)/);
+            if (match) moneyInTrade = parseNumber(match[1]);
+            location.href = `https://www.torn.com/trade.php#step=view&sub_step=addmoney2&ID=${tradeId}&amount=${dollars + moneyInTrade}`;
+        });
 
-            const container=document.createElement("div"); container.id="ghost-trade-helper"; container.style.cssText="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
-            [['-100k',-100_000],['-1m',-1_000_000],['-10m',-10_000_000],['-100m',-100_000_000],['-1b',-1_000_000_000]]
-            .forEach(([label,amt])=>{ container.appendChild(mkBtn(label,()=>{ input.value=formatNumber(Math.max(0,parseNumber(input.value)+amt)); input.dispatchEvent(new Event('input',{bubbles:true})); })); });
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;justify-content:center;margin:8px 0";
+        wrap.appendChild(btn);
+        container.before(wrap);
+    }
 
-            container.appendChild(mkBtn('Custom',()=>{
-                const val=prompt('Enter amount to subtract:'); if(!val) return;
-                const sub=parseShorthand(val);
-                input.value=formatNumber(Math.max(0,parseNumber(input.value)-sub));
-                input.dispatchEvent(new Event('input',{bubbles:true}));
+    /** --------------------------
+     *  Ghost Trade Buttons
+     *  -------------------------- */
+    function addGhostButtons(input, sync) {
+        if (document.getElementById("ghost-trade-helper")) return;
+        const container = document.createElement("div");
+        container.id = "ghost-trade-helper";
+        container.style.cssText = "margin-top:10px;display:flex;flex-wrap:wrap;gap:4px";
+
+        const mkBtn = (label, action) => {
+            const b = document.createElement("button");
+            b.className = "torn-btn orange";
+            b.style.cssText = "top:3px;display:block";
+            b.innerHTML = `<strong> ${label} </strong>`;
+            b.onclick = e => { e.preventDefault(); action(); };
+            return b;
+        };
+
+        const renderPresets = () => {
+            container.innerHTML = ''; // reset
+
+            // Add preset buttons
+            settings.presets.forEach(label => {
+                const amt = parseShorthand(label.replace('-', ''));
+                container.appendChild(mkBtn(label, () => {
+                    const newVal = Math.max(0, parseNumber(input.value) + (label.startsWith('-') ? -amt : amt));
+                    input.value = formatNumber(newVal);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (settings.autoSync) sync();
+                }));
+            });
+
+            // Custom button
+            container.appendChild(mkBtn('Custom', () => {
+                const val = prompt('Enter amount (e.g. 45k, 7m, 5b):');
+                if (val === null) return;
+                const sub = parseShorthand(val);
+                const newVal = Math.max(0, parseNumber(input.value) - sub);
+                input.value = formatNumber(newVal);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if (settings.autoSync) sync();
             }));
 
-            container.appendChild(mkBtn('Paste',async()=>{
-                try{ const text=await navigator.clipboard.readText(); const sub=parseShorthand(text);
-                    input.value=formatNumber(Math.max(0,parseNumber(input.value)-sub));
-                    input.dispatchEvent(new Event('input',{bubbles:true}));
-                }catch{alert('Clipboard access denied.');}
+            // Paste button
+            container.appendChild(mkBtn('Paste', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (!text) return;
+                    const sub = parseShorthand(text);
+                    const newVal = Math.max(0, parseNumber(input.value) - sub);
+                    input.value = formatNumber(newVal);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (settings.autoSync) sync();
+                } catch { alert('Clipboard access denied.'); }
             }));
 
-            input.parentElement.insertAdjacentElement('afterend',container);
-        },
+            // Settings button
+            container.appendChild(mkBtn('⚙️', () => {
+                const toggle = confirm(`Auto-sync is currently ${settings.autoSync ? 'ON' : 'OFF'}. Toggle?`);
+                if (toggle) {
+                    settings.autoSync = !settings.autoSync;
+                    saveSettings();
+                }
+                const selected = prompt(
+                    'Enter preset buttons you want (comma separated, e.g., -100k,-500k,-1m,-10m,-100m,-1b). Leave empty for none:',
+                    settings.presets.join(',')
+                );
+                if (selected === null) return;
+                settings.presets = selected.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                saveSettings();
+                renderPresets();
+            }));
+        };
 
-        /** Auto-Sync Wallet Input */
-        tradeAutoSync: function(){
-            if(!config.tradeAutoSync || location.pathname!=='/trade.php') return;
-            const input=document.querySelector('.user-id.input-money');
-            if(!input) return;
-            let lastWallet=getTradeCash(), lastInput=parseNumber(input.value);
+        renderPresets();
+        input.parentElement.insertAdjacentElement('afterend', container);
+    }
 
-            const apply=()=>{
-                const newWallet=getTradeCash();
-                if(newWallet===lastWallet) return;
-                const delta=lastInput-lastWallet;
-                const newVal=Math.max(0,newWallet+delta);
-                input.value=formatNumber(newVal);
-                input.dispatchEvent(new Event('input',{bubbles:true}));
-                lastWallet=newWallet; lastInput=newVal;
-            };
+    /** --------------------------
+     *  Wallet Sync
+     *  -------------------------- */
+    function observeWalletSync(input) {
+        if (!settings.autoSync) return () => {};
+        let lastWallet = getTradePageCash();
+        let lastInput = parseNumber(input.value);
 
-            const node=document.querySelector('.money-value');
-            if(node) new MutationObserver(apply).observe(node,{childList:true,subtree:true});
-            setInterval(apply,500);
-        },
+        const sync = () => { lastWallet = getTradePageCash(); lastInput = parseNumber(input.value); };
+        const apply = () => {
+            if (!settings.autoSync) return;
+            const newWallet = getTradePageCash();
+            if (newWallet === lastWallet) return;
+            const delta = lastInput - lastWallet;
+            const newVal = Math.max(0, newWallet + delta);
+            input.value = formatNumber(newVal);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            lastWallet = newWallet;
+            lastInput = newVal;
+        };
+
+        const node = document.querySelector('.money-value');
+        if (node) new MutationObserver(apply).observe(node, { childList: true, subtree: true });
+        setInterval(apply, 500);
+        return sync;
+    }
+
+    /** --------------------------
+     *  Init
+     *  -------------------------- */
+    async function init() {
+        await addBankButton();
+        const input = document.querySelector('.user-id.input-money');
+        if (!input) return;
+
+        input.value = formatNumber(getTradePageCash() + parseNumber(input.value));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+        const sync = observeWalletSync(input);
+        addGhostButtons(input, sync);
+        sync?.();
+    }
+
+    init();
+}
+
 
         /** Russian Roulette Quick Buttons */
         rrButtons: function(){
             if(!config.rrButtons || !location.href.includes('russianRoulette') || document.getElementById('rr-quick-buttons')) return;
 
-            // --- Get RFCV from cookies ---
             function getRFCVFromCookie() {
                 const match = document.cookie.match(/(?:rfc_v|rfc_id)=([a-f0-9]+)/);
                 return match ? match[1] : null;
             }
 
-            // --- Fire shots ---
             async function fireShots(num, btn){
                 try {
                     if(btn) btn.disabled = true;
@@ -261,12 +365,10 @@
                 }
             }
 
-            // --- UI container ---
             const container=document.createElement('div');
             container.id='rr-quick-buttons';
             container.style.cssText='position:fixed;top:120px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:5px;';
 
-            // --- Shoot buttons ---
             [1,2,3].forEach(num=>{
                 const btn=document.createElement('button');
                 btn.className='torn-btn orange';
@@ -277,7 +379,6 @@
                 container.appendChild(btn);
             });
 
-            // --- Delay button ---
             const delayedBtn=document.createElement('button');
             delayedBtn.className='torn-btn orange';
             delayedBtn.style.cssText='display:flex;align-items:center;justify-content:center;margin:0;padding:5px 10px;outline:none';
@@ -295,10 +396,7 @@
                     } else {
                         delayedBtn.innerHTML=`<strong>&emsp;Firing&emsp;</strong>`;
                         fireShots(1,delayedBtn);
-                        setTimeout(()=>{
-                            delayedBtn.disabled=false;
-                            delayedBtn.innerHTML=original;
-                        },500);
+                        setTimeout(()=>{ delayedBtn.disabled=false; delayedBtn.innerHTML=original; },500);
                     }
                 };
                 tick();
@@ -317,7 +415,6 @@
     });
     mainObserver.observe(document.body,{childList:true,subtree:true});
 
-    // Run once immediately
     Object.values(modules).forEach(fn=>fn());
 
 })();
