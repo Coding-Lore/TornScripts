@@ -4,6 +4,8 @@
 // @version      2.6
 // @description  PAIN icon, opens faction armoury
 // @author       Lore
+// @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/PainTag.user.js
+// @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/PainTag.user.js
 // @match        https://www.torn.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
