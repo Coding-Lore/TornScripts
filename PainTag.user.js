@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         PAIN Icon
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  PAIN icon, opens faction armoury
 // @author       Lore
 // @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/PainTag.user.js
 // @updateURL    https://github.com/Coding-Lore/TornScripts/raw/main/PainTag.user.js
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
 // @match        https://www.torn.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
@@ -29,9 +30,9 @@
         const iconImg = document.createElement('img');
         // Use your custom images for light/dark mode
         if (document.querySelector('body').className.indexOf("dark-mode") === -1) {
-            iconImg.src = 'https://i.imgur.com/kEyFIkH.png'; // Light mode
+            iconImg.src = 'https://factiontags.torn.com/7251-17195.png'; // Light mode
         } else {
-            iconImg.src = 'https://i.imgur.com/oltWyQf.png'; // Dark mode
+            iconImg.src = 'https://factiontags.torn.com/7251-17195.png'; // Dark mode
         }
         iconImg.alt = 'Custom Icon';
         iconImg.style.width = '17px';
