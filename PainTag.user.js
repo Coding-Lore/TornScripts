@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PAIN Icon
 // @namespace    http://tampermonkey.net/
-// @version      2.6
+// @version      1.0
 // @description  PAIN icon, opens faction armoury
 // @author       Lore
 // @downloadURL  https://github.com/Coding-Lore/TornScripts/raw/main/PainTag.user.js
