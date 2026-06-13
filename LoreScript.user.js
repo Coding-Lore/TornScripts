@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lore's Cool Script
 // @namespace    https://github.com/Coding-Lore/TornScripts
-// @version      5.1
-// @description  Zoomy Attacks, Quick Banking, Quick RR Buttons with Copy Amount & Super-Lightweight 12hr Expiration Times
+// @version      6.0
+// @description  Zoomy Attacks, Quick Banking, Quick RR Buttons with Copy Amount and RR Timeout Timers
 // @author       Lore
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=torn.com
 // @downloadURL  https://raw.githubusercontent.com/Coding-Lore/TornScripts/main/LoreScript.user.js
@@ -23,10 +23,10 @@
      * Feature Toggles (Modular)
      * -------------------------- */
     const config = {
-        attackEnhancements: false,
+        attackEnhancements: true,
         quickBanking: true,
         rrButtons: true,
-        rrTimers: true,             // Expiration timestamps active
+        rrTimers: true,
         rrVisibleButtons: [1,2,3,4] // 1=Shoot1, 2=Shoot2, 3=Shoot3, 4=Delay
     };
 
