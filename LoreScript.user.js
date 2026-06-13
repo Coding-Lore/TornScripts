@@ -23,7 +23,7 @@
      * Feature Toggles (Modular)
      * -------------------------- */
     const config = {
-        attackEnhancements: true,
+        attackEnhancements: false,
         quickBanking: true,
         rrButtons: true,
         rrTimers: true,             // Expiration timestamps active
@@ -101,7 +101,7 @@
                     div.className = "lore-attack-order-settings";
                     div.style.cssText = "position: absolute; top: 5px; right: 5px; z-index: 99999; background: rgba(0,0,0,0.75); padding: 6px 10px; border-radius: 5px; border: 1px solid #444; font-size: 12px; color: #fff;";
                     div.innerHTML=`<fieldset style="border:none; padding:0; margin:0;">
-                        <span style="padding-right:6px; font-weight:bold; color:#aaa;">Order:</span>
+                        <span style="padding-right:6px; font-weight:bold; color:#aaa;">Finish:</span>
                         <input type="radio" id="leave" name="attackType" value="leave" ${attackType===1?"checked":""} style="vertical-align:middle; cursor:pointer;"><label for="leave" style="margin-right:6px; cursor:pointer; vertical-align:middle;">Leave</label>
                         <input type="radio" id="mug" name="attackType" value="mug" ${attackType===2?"checked":""} style="vertical-align:middle; cursor:pointer;"><label for="mug" style="margin-right:6px; cursor:pointer; vertical-align:middle;">Mug</label>
                         <input type="radio" id="hosp" name="attackType" value="hosp" ${attackType===3?"checked":""} style="vertical-align:middle; cursor:pointer;"><label for="hosp" style="cursor:pointer; vertical-align:middle;">Hosp</label>
